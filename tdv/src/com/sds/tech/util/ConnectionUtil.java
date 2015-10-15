@@ -1,7 +1,13 @@
 package com.sds.tech.util;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
@@ -15,6 +21,51 @@ import com.jcraft.jsch.UserInfo;
  * The Class ConnectionUtil.
  */
 public class ConnectionUtil {
+
+	private static Properties props;
+
+	public static String getProperty(final String key) {
+		return getProperty(key, null);
+	}
+
+	public static String getProperty(final String key, final String defaultValue) {
+		String value = props.getProperty(key, defaultValue);
+
+		try {
+			Pattern pattern = Pattern.compile("\\$\\{(.*)\\}");
+			Matcher matcher = pattern.matcher(value);
+
+			while (matcher.find()) {
+				String innerProperty = matcher.group();
+				String innerPropertyValue = props.getProperty(innerProperty
+						.substring(2, innerProperty.length() - 1));
+
+				value = value.replace(innerProperty, innerPropertyValue);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return value;
+	}
+
+	public static void initProperties(String propertiesPath) {
+		props = new Properties();
+
+		try {
+			if (propertiesPath == null || "".equals(propertiesPath)) {
+				propertiesPath = "command.properties";
+			}
+
+			FileInputStream fis = new FileInputStream(propertiesPath);
+
+			props.load(fis);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * Gets the session.
@@ -31,10 +82,35 @@ public class ConnectionUtil {
 	 */
 	public static Session getSession(final String serverIP,
 			final int serverPort, final String userId, final String userPw) {
+		return getSession(serverIP, serverPort, userId, userPw, null);
+	}
+
+	/**
+	 * Gets the session.
+	 *
+	 * @param serverIP
+	 *            the server ip
+	 * @param serverPort
+	 *            the server port
+	 * @param userId
+	 *            the user id
+	 * @param userPw
+	 *            the user pw
+	 * @param identityPath
+	 *            the identity path
+	 * @return the session
+	 */
+	public static Session getSession(final String serverIP,
+			final int serverPort, final String userId, final String userPw,
+			final String identityPath) {
 		JSch sch = new JSch();
 		Session session = null;
 
 		try {
+			if (identityPath != null) {
+				sch.addIdentity(identityPath);
+			}
+
 			session = sch.getSession(userId, serverIP, serverPort);
 			session.setUserInfo(new UserInfo() {
 				@Override
@@ -112,7 +188,7 @@ public class ConnectionUtil {
 		Channel channel = null;
 		BufferedReader br = null;
 		String buffer = null;
-		String result = null;
+		StringBuffer result = new StringBuffer();
 
 		try {
 			channel = getChannel(session, command);
@@ -123,7 +199,7 @@ public class ConnectionUtil {
 			channel.connect();
 
 			while ((buffer = br.readLine()) != null) {
-				result = buffer;
+				result.append(buffer).append("\n");
 			}
 
 			channel.disconnect();
@@ -139,6 +215,6 @@ public class ConnectionUtil {
 			}
 		}
 
-		return result;
+		return result.toString();
 	}
 }
