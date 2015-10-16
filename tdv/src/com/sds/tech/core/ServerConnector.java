@@ -23,7 +23,7 @@ public class ServerConnector {
 	private Map<String, ThreadInfoSeries> threadTable;
 
 	public ServerConnector() {
-		
+
 	}
 
 	public ServerConnector(String serverName, String serverIP,
@@ -119,26 +119,13 @@ public class ServerConnector {
 				+ userId + ", password=" + userPw + ", osType=" + osType + "]";
 	}
 
-	public String toCsvFormatString() {
-		StringBuffer sb = new StringBuffer();
-
-		sb.append(serverName);
-		sb.append(",").append(serverIP);
-		sb.append(",").append(serverPort);
-		sb.append(",").append(userId);
-		sb.append(",").append(userPw);
-		sb.append("\n");
-
-		return sb.toString();
-	}
-
 	public void connect() {
 		try {
 			if (session == null) {
-				session = ConnectionUtil.getSession(serverIP, serverPort, userId,
-						userPw, identityPath);
+				session = ConnectionUtil.getSession(serverIP, serverPort,
+						userId, userPw, identityPath);
 			}
-			
+
 			if (!session.isConnected()) {
 				session.connect();
 			}
@@ -199,15 +186,15 @@ public class ServerConnector {
 			for (ThreadInfo ti : threadDump) {
 				ThreadInfoSeries tis = null;
 				String nid = ti.getNidHex();
-				String threadName = ti.getName();
 
 				if (threadTable.containsKey(nid)) {
 					tis = threadTable.get(nid);
 				} else {
-					tis = new ThreadInfoSeries(nid, threadName);
+					tis = new ThreadInfoSeries(nid, ti.getName());
 				}
 
 				tis.setInfo(i, ti);
+				tis.setState(i, ti.getState());
 
 				threadTable.put(nid, tis);
 			}
@@ -215,6 +202,7 @@ public class ServerConnector {
 
 		String[][] dataValues = new String[threadTable.size()][5];
 		int index = 0;
+		StringBuffer buffer = new StringBuffer();
 
 		for (String nid : threadTable.keySet()) {
 			ThreadInfoSeries tis = threadTable.get(nid);
@@ -223,7 +211,11 @@ public class ServerConnector {
 			dataValues[index][1] = tis.getName();
 
 			for (int i = 0; i < 3; ++i) {
-				dataValues[index][i + 2] = tis.getInfo(i).getState();
+				buffer.delete(0, buffer.length());
+				buffer.append("State: ").append(tis.getState(i));
+				buffer.append("\nStatus Description: ").append(
+						tis.getInfo(i).getStatusDesc());
+				dataValues[index][i + 2] = buffer.toString();
 			}
 
 			index++;

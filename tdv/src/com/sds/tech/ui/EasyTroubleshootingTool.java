@@ -40,6 +40,7 @@ import net.miginfocom.swing.MigLayout;
 import com.sds.tech.core.ServerConnector;
 import com.sds.tech.core.ThreadInfo;
 import com.sds.tech.core.ThreadInfoSeries;
+import javax.swing.JTabbedPane;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -95,8 +96,6 @@ public class EasyTroubleshootingTool extends JFrame {
 			public void run() {
 				EasyTroubleshootingTool easyTroubleshootingTool = new EasyTroubleshootingTool();
 
-				easyTroubleshootingTool
-						.setTitle("Easy Troubleshooting Tool (Thread Dump Visualizer)");
 				easyTroubleshootingTool.setExtendedState(6);
 				easyTroubleshootingTool.setVisible(true);
 			}
@@ -107,33 +106,42 @@ public class EasyTroubleshootingTool extends JFrame {
 	 * Instantiates a new easy troubleshooting tool.
 	 */
 	public EasyTroubleshootingTool() {
-		setTitle("Easy Troubleshooting Tool");
+		initUI();
+	}
+
+	/**
+	 * 
+	 */
+	private void initUI() {
+		setTitle("Easy Troubleshooting Tool (Thread Dump Visualizer)");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setMinimumSize(new Dimension(400, 600));
+
+		createMenuBar();
 
 		JSplitPane outerSplitPane = new JSplitPane();
 		outerSplitPane.setContinuousLayout(true);
 		outerSplitPane.setResizeWeight(0.2);
-		getContentPane().add(outerSplitPane, BorderLayout.CENTER);
 
 		JScrollPane leftScrollPane = new JScrollPane();
-		outerSplitPane.setLeftComponent(leftScrollPane);
 		leftScrollPane.setAutoscrolls(true);
 
 		serverListPanel = new JPanel();
-		leftScrollPane.setViewportView(serverListPanel);
 		serverListPanel.setLayout(new MigLayout("", "[]", "[][][]"));
+		leftScrollPane.setViewportView(serverListPanel);
 
 		JSplitPane innerSplitPane = new JSplitPane();
 		innerSplitPane.setContinuousLayout(true);
-		outerSplitPane.setRightComponent(innerSplitPane);
 		innerSplitPane.setResizeWeight(0.3);
 		innerSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
 
 		innerSplitPane.setLeftComponent(createTopRightScrollPane());
 		innerSplitPane.setRightComponent(createBottomRightScrollPane());
 
-		createMenuBar();
+		outerSplitPane.setLeftComponent(leftScrollPane);
+		outerSplitPane.setRightComponent(innerSplitPane);
+
+		getContentPane().add(outerSplitPane, BorderLayout.CENTER);
 	}
 
 	/**
@@ -146,7 +154,8 @@ public class EasyTroubleshootingTool extends JFrame {
 		threadDumpPanel = new JPanel();
 		threadDumpPanel.setLayout(new MigLayout("", "[grow]", "[][grow]"));
 
-		btnGetThreadDump = new JButton("Get Thread Dump (3 Times)");
+		btnGetThreadDump = new JButton(
+				"Get Thread Dump (Every 2 Seconds 3 Times)");
 		btnGetThreadDump.setEnabled(false);
 		btnGetThreadDump.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -161,9 +170,9 @@ public class EasyTroubleshootingTool extends JFrame {
 
 		threadDumpScrollPane = new JScrollPane();
 		threadDumpPanel.add(threadDumpScrollPane, "cell 0 1,grow");
-		
+
 		bottomRightScrollPane.setViewportView(threadDumpPanel);
-		
+
 		return bottomRightScrollPane;
 	}
 
@@ -395,10 +404,11 @@ public class EasyTroubleshootingTool extends JFrame {
 	 *            the data values
 	 */
 	private void drawThreadDumpTable(final String[][] dataValues) {
-		threadDumpScrollPane.updateUI();
-		
+//		threadDumpScrollPane.updateUI();
+
 		final JTable threadDumpTable = new JTable(dataValues, columnNames);
-		threadDumpTable.setEnabled(false);
+		threadDumpTable.setDefaultRenderer(Object.class,
+				new MultiLineCellRenderer());
 		threadDumpTable.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {

@@ -10,19 +10,20 @@ public class ThreadDumpParser {
 	private static final String BLANK_DELIMETER = "";
 	private static final String HEX_DELIMETER = "0x";
 	private static final String THREAD_START_DELIMETER = "\"";
-	private static final String JAVA_LANG_THREAD_STATE = "java.lang.Thread.State: ";
+	private static final String STR_JAVA_LANG_THREAD_STATE = "java.lang.Thread.State: ";
+	private static final String STR_DAEMON = "daemon";
 
 	public static List<ThreadInfo> parse(String rawData) {
 		List<ThreadInfo> threadList = new ArrayList<ThreadInfo>();
-		String[] lines = rawData.split("\n");
-		int length = lines.length;
+		String[] lines = rawData.split(NEXTLINE_DELIMETER);
+		int lineCount = lines.length;
 
-		for (int i = 0; i < length; ++i) {
-			String buffer = lines[i];
+		for (int i = 0; i < lineCount; ++i) {
+			String currentLine = lines[i];
 
-			if (buffer.startsWith(THREAD_START_DELIMETER)) {
-				boolean isDaemon = (buffer.indexOf("daemon") >= 0);
-				StringTokenizer st = new StringTokenizer(buffer, "=");
+			if (currentLine.startsWith(THREAD_START_DELIMETER)) {
+				boolean isDaemon = (currentLine.indexOf(STR_DAEMON) >= 0);
+				StringTokenizer st = new StringTokenizer(currentLine, "=");
 
 				String threadName = st.nextToken().split(SPACE_DELIMETER)[0]
 						.replaceAll(THREAD_START_DELIMETER, BLANK_DELIMETER);
@@ -45,23 +46,23 @@ public class ThreadDumpParser {
 				ti.setNid(nid);
 				ti.setStatusDesc(statusDesc);
 
-				buffer = lines[++i];
+				currentLine = lines[++i];
 
-				if (BLANK_DELIMETER.equals(buffer)) {
+				if (BLANK_DELIMETER.equals(currentLine)) {
 					continue;
 				}
 
-				String state = buffer.substring(
-						buffer.indexOf(JAVA_LANG_THREAD_STATE)
-								+ JAVA_LANG_THREAD_STATE.length()).split(
+				String state = currentLine.substring(
+						currentLine.indexOf(STR_JAVA_LANG_THREAD_STATE)
+								+ STR_JAVA_LANG_THREAD_STATE.length()).split(
 						SPACE_DELIMETER)[0];
 
 				ti.setState(state);
 
 				StringBuffer stackInfo = new StringBuffer();
 
-				while (!BLANK_DELIMETER.equals(buffer = lines[++i])) {
-					stackInfo.append(buffer).append(NEXTLINE_DELIMETER);
+				while (!BLANK_DELIMETER.equals(currentLine = lines[++i])) {
+					stackInfo.append(currentLine).append(NEXTLINE_DELIMETER);
 				}
 
 				ti.setStackInfo(stackInfo);
